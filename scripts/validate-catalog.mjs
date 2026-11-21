@@ -40,6 +40,19 @@ export async function validateCatalog(catalog, readSnapshot = readFile, root) {
   return paths;
 }
 
+export function assertPublishedProvenance(published, candidate) {
+  for (const plugin of published.plugins) {
+    const next = candidate.plugins.find(({ id }) => id === plugin.id);
+    for (const release of plugin.versions ?? []) {
+      if (!release.metadata?.commitSha) continue;
+      const replacement = next?.versions?.find(({ version }) => version === release.version);
+      const label = `${plugin.id}@${release.version}: published provenance may not change`;
+      assert.equal(replacement?.metadata?.commitSha, release.metadata.commitSha, label);
+      assert.equal(replacement?.metadata?.repository, release.metadata.repository, label);
+    }
+  }
+}
+
 async function validateSnapshot(plugin, version, paths, readSnapshot, root) {
   const label = `${plugin.id}@${version.version}`;
   assert.match(version.version, /^\d+\.\d+\.\d+(?:-[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*)?$/, `${label}: unsafe snapshot version`);
@@ -48,6 +61,11 @@ async function validateSnapshot(plugin, version, paths, readSnapshot, root) {
   assert.ok(!paths.has(expectedPath), `${label}: duplicate version`);
   paths.add(expectedPath);
   assert.ok(!version.package && !version.packageUrl, `${label}: executable packages are outside B1`);
+  const { commitSha, repository } = version.metadata ?? {};
+  if (commitSha !== undefined || repository !== undefined) {
+    assert.match(commitSha ?? '', /^[0-9a-f]{40}$/, `${label}: expected a full lowercase release commit`);
+    assert.match(repository ?? '', /^https:\/\/github\.com\/[a-z0-9-]+\/[a-z0-9_.-]+$/i, `${label}: expected a GitHub repository URL`);
+  }
   const bytes = await readSnapshot(root ? new URL(expectedPath, root) : expectedPath);
   const checksum = `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
   assert.equal(version.checksum, checksum, `${label}: raw snapshot checksum mismatch`);

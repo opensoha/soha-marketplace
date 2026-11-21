@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { readdir, readFile } from 'node:fs/promises';
-import { validateCatalog } from './validate-catalog.mjs';
+import { assertPublishedProvenance, validateCatalog } from './validate-catalog.mjs';
 
 const repositoryRoot = new URL('../', import.meta.url);
 const catalogRoot = new URL('site/marketplace/', repositoryRoot);
@@ -29,6 +29,10 @@ assert.deepEqual(siteFiles.sort(), expectedFiles.sort(), 'site must contain only
 const baseRevision = process.env.MARKETPLACE_BASE_SHA;
 if (baseRevision && !/^0{40}$/.test(baseRevision)) {
   assert.match(baseRevision, /^[a-f0-9]{40}$/);
+  const published = JSON.parse(execFileSync('git', [
+    'show', `${baseRevision}:site/marketplace/index.json`,
+  ], { cwd: repositoryRoot, encoding: 'utf8' }));
+  assertPublishedProvenance(published, index);
   const modifiedSnapshots = execFileSync('git', [
     'diff', '--name-only', '--diff-filter=DMRT', '--no-renames',
     baseRevision, 'HEAD', '--', 'site/marketplace/plugins/',

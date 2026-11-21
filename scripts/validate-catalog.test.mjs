@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { test } from 'node:test';
-import { validateCatalog } from './validate-catalog.mjs';
+import { assertPublishedProvenance, validateCatalog } from './validate-catalog.mjs';
 
 function createFixture() {
   const manifest = {
@@ -28,11 +28,29 @@ function createFixture() {
 
 test('a static snapshot is validated using its exact bytes', async () => {
   const { catalog, bytes, version } = createFixture();
+  version.metadata = { commitSha: 'a'.repeat(40), repository: 'https://github.com/opensoha/example' };
   const paths = await validateCatalog(catalog, async (path) => {
     assert.equal(path, version.manifestUrl);
     return bytes;
   });
   assert.deepEqual([...paths], [version.manifestUrl]);
+});
+
+test('release provenance requires a full commit', async () => {
+  const { catalog, version } = createFixture();
+  version.metadata = { commitSha: 'main' };
+  await assert.rejects(validateCatalog(catalog, () => assert.fail('invalid release must not be read')), /full lowercase release commit/);
+});
+
+test('release provenance requires a repository and cannot be rewritten', async () => {
+  const { catalog, bytes, version } = createFixture();
+  version.metadata = { commitSha: 'a'.repeat(40) };
+  await assert.rejects(validateCatalog(catalog, async () => bytes), /expected a GitHub repository URL/);
+  version.metadata.repository = 'https://github.com/opensoha/example';
+  const published = structuredClone(catalog);
+  assertPublishedProvenance(published, catalog);
+  version.metadata.commitSha = 'b'.repeat(40);
+  assert.throws(() => assertPublishedProvenance(published, catalog), /published provenance may not change/);
 });
 
 test('a change of formatting alone invalidates a published digest', async () => {

@@ -1,7 +1,49 @@
 {
   "schemaVersion": "marketplace.opensoha.io/v1",
-  "generatedAt": "2026-11-21T00:00:00Z",
+  "generatedAt": "2026-11-21T07:44:53Z",
   "sourceId": "opensoha-official",
-  "plugins": [],
+  "plugins": [
+    {
+      "id": "opensoha.example-skill-pack",
+      "name": "Soha Example Skill Pack",
+      "version": "0.1.0",
+      "publisher": "OpenSoha",
+      "type": "skill-pack",
+      "source": "marketplace:opensoha.example-skill-pack",
+      "latestVersion": "0.1.0",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "manifestUrl": "plugins/opensoha.example-skill-pack/0.1.0/plugin.manifest.json",
+          "checksum": "sha256:db658c2934b390abdde80d7130b51934e1d7348ea0d19e3fb1258eab83d0fa66",
+          "metadata": {
+            "repository": "https://github.com/opensoha/soha-plugin-example-skill-pack",
+            "commitSha": "cae2402294f6c727fc07406ab3fc4d35c9db21aa"
+          }
+        }
+      ],
+      "manifest": {
+        "id": "opensoha.example-skill-pack",
+        "name": "Soha Example Skill Pack",
+        "version": "0.1.0",
+        "publisher": "OpenSoha",
+        "type": "skill-pack",
+        "description": "Demonstrates Soha repository installation and declarative extension registration.",
+        "runtime": {
+          "mode": "manifest-only"
+        },
+        "extensionPoints": {
+          "ai": {
+            "skillPacks": [
+              {
+                "id": "example-skill-pack",
+                "label": "Soha Example Skill Pack"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
   "advisories": []
 }
