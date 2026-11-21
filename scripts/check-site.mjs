@@ -23,7 +23,21 @@ async function listFiles(directory, prefix = '') {
 const siteFiles = await listFiles(new URL('site/', repositoryRoot));
 const index = JSON.parse(await readFile(new URL('index.json', catalogRoot)));
 const snapshots = await validateCatalog(index, readFile, catalogRoot);
-const expectedFiles = ['marketplace/index.json', ...[...snapshots].map((path) => `marketplace/${path}`)];
+const repositories = JSON.parse(await readFile(new URL('repositories.json', catalogRoot)));
+assert.equal(repositories.schemaVersion, 'marketplace.opensoha.io/repositories/v1');
+assert.equal(repositories.sourceId, 'opensoha-official');
+assert.ok(Array.isArray(repositories.repositories));
+for (const repository of repositories.repositories) {
+  for (const field of ['id', 'name', 'publisher', 'type', 'repositoryUrl']) {
+    assert.ok(typeof repository[field] === 'string' && repository[field].length > 0, `repository ${field} is required`);
+  }
+  assert.match(repository.repositoryUrl, /^https:\/\/github\.com\/[a-z0-9-]+\/[a-z0-9_.-]+$/);
+  assert.ok(Object.keys(repository).every((key) =>
+    ['id', 'name', 'publisher', 'type', 'repositoryUrl', 'summary'].includes(key)), 'repository index entries only register author repositories');
+  if ('summary' in repository) assert.equal(typeof repository.summary, 'string');
+}
+assert.equal(new Set(repositories.repositories.map((repository) => repository.id)).size, repositories.repositories.length);
+const expectedFiles = ['marketplace/index.json', 'marketplace/repositories.json', ...[...snapshots].map((path) => `marketplace/${path}`)];
 assert.deepEqual(siteFiles.sort(), expectedFiles.sort(), 'site must contain only the catalog and referenced snapshots');
 
 const baseRevision = process.env.MARKETPLACE_BASE_SHA;
