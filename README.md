@@ -1,6 +1,6 @@
 # OpenSoha Marketplace
 
-This repository serves the official plugin index and immutable, versioned manifests as static files. Running the marketplace does not require Soha Cloud. The GitHub Pages endpoint, once enabled, is `https://opensoha.github.io/soha-marketplace/marketplace/index.json`.
+This repository serves the official [repository index](https://marketplace.opensoha.com/marketplace/repositories.json) as static files. Soha Core reads releases from the registered repositories on demand. The legacy [versioned catalog](https://marketplace.opensoha.com/marketplace/index.json) serves earlier Soha versions.
 
 The repository index at `marketplace/repositories.json` lists reviewed plugin repositories. Each plugin repository owns its versions and releases; this index does not scan releases. The canonical repository-index schema is owned by Soha Contracts; until it is available in the published dependency, this repository performs minimal static validation.
 
@@ -14,13 +14,12 @@ npm test
 python3 -m http.server 18736 --bind 127.0.0.1 --directory site
 ```
 
-Configure only an isolated Soha instance to use `http://127.0.0.1:18736/marketplace/index.json` before publishing. The site keeps the `opensoha-official` source ID. Never reconfigure a production instance for this smoke test.
+Configure an isolated Soha instance to use `http://127.0.0.1:18736/marketplace/repositories.json` before publishing. Use `/marketplace/index.json` for legacy compatibility checks. Both indexes keep the `opensoha-official` source ID.
 
 ## Publish
 
 1. Select **GitHub Actions** as the GitHub Pages source. The workflow validates pull requests and deploys the validated `site/` artifact only from `main`. Once bootstrapped, require the `validate` check on `main` and block direct and force pushes so unpublished changes cannot bypass snapshot checks. If the first deployment ran before Pages was enabled, rerun that workflow run after enabling Pages.
-2. For a reviewed legacy B1 declarative release (only if the compatibility freeze is explicitly lifted), place the exact manifest bytes at `site/marketplace/plugins/<id>/<version>/plugin.manifest.json`. In `site/marketplace/index.json`, reference `plugins/<id>/<version>/plugin.manifest.json` and set `checksum` to `sha256:` followed by the SHA-256 of the file bytes. Use the declared `@opensoha/contracts` schemas; update the pin only when the required schema has been released.
-3. Record the public repository and full lowercase Git commit in the version's `metadata.repository` and `metadata.commitSha`. Verify that the local snapshot is byte-for-byte equal to the root manifest at that commit.
-4. Keep the published snapshot, repository and commit immutable. Add a version or use catalog suspension metadata. Verify the Pages endpoint and the digest from the Soha instance's network before changing a production endpoint or DNS.
+2. Add a reviewed public GitHub repository to `site/marketplace/repositories.json`. Publish plugin updates in the author repository as GitHub Releases.
+3. Keep the legacy index and its snapshots available at their original paths for compatibility. Check the published HTTPS indexes and snapshot digests after a site change.
 
-Only `site/` is deployed. The existing official domain is not configured by this repository.
+GitHub Pages deploys `site/`. The custom domain and HTTPS enforcement are configured in Pages settings.
